@@ -4,6 +4,11 @@ defmodule Elics.Window do
   """
   use GenServer
 
+  # Import wx constants
+  alias Elics.{WX}
+  # to allow ORing of flags with |||
+  import Bitwise
+
   @title "Emacs Clone in Elixir"
   @default_size {800, 600}
   @default_position {100, 100}
@@ -32,12 +37,30 @@ defmodule Elics.Window do
       )
 
     # Create a panel to help with layout.
-    panel = :wxPanel.new(frame, [{:winid, -1}])
+    panel = :wxPanel.new(frame, [])
 
-    # Create a multiline text control to serve as our editing area.
-    text_ctrl =
-      :wxTextCtrl.new(panel, -1, [{:style, 3}]
-      )
+    # Setup sizers
+    main_sizer = :wxBoxSizer.new(WX.wxVERTICAL())
+    sizer_buffer = :wxStaticBoxSizer.new(WX.wxVERTICAL(), panel)
+    sizer_minibuffer = :wxStaticBoxSizer.new(WX.wxVERTICAL(), panel)
+
+    # Setup text controls
+    text_buffer =
+      :wxTextCtrl.new(panel, -1, [{:style, WX.wxDEFAULT() ||| WX.wxTE_MULTILINE()}])
+
+    text_minibuffer =
+      :wxTextCtrl.new(panel, -1, [{:style, WX.wxDEFAULT()}])
+
+    # Add controls to sizers
+    :wxSizer.add(sizer_buffer, text_buffer, [{:flag, WX.wxEXPAND()}, {:proportion, 1}])
+    :wxSizer.add(sizer_minibuffer, text_minibuffer, [{:flag, WX.wxEXPAND()}])
+
+    # Add sizers to main
+    :wxSizer.add(main_sizer, sizer_buffer, [{:flag, WX.wxEXPAND()}, {:proportion, 1}])
+    :wxSizer.add(main_sizer, sizer_minibuffer, [{:flag, WX.wxEXPAND()}])
+
+    # Set panel sizer to main
+    :wxPanel.setSizer(panel, main_sizer)
 
     # Connect the frame’s close event so we can clean up gracefully.
     :wxFrame.connect(frame, :close_window)
@@ -45,7 +68,7 @@ defmodule Elics.Window do
     # Show the window.
     :wxFrame.show(frame)
 
-    new_state = Map.merge(state, %{wx: wx, frame: frame, panel: panel, text_ctrl: text_ctrl})
+    new_state = Map.merge(state, %{wx: wx, frame: frame, panel: panel})
     {:ok, new_state}
   end
 
