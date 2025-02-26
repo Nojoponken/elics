@@ -49,7 +49,13 @@ defmodule Elics.Window do
       :wxTextCtrl.new(panel, -1, [{:style, WX.wxDEFAULT() ||| WX.wxTE_MULTILINE()}])
 
     text_minibuffer =
-      :wxTextCtrl.new(panel, -1, [{:style, WX.wxDEFAULT()}])
+      :wxTextCtrl.new(panel, -1, [{:style, WX.wxDEFAULT() ||| WX.wxTE_PROCESS_ENTER()}])
+
+    :wxWindow.setFocus(text_minibuffer)
+
+    # Connect the minibuffer to the ENTER event.
+    # TODO fix this, doesn't work
+    :wxTextCtrl.connect(text_minibuffer, :command_text_enter)
 
     # Add controls to sizers
     :wxSizer.add(sizer_buffer, text_buffer, [{:flag, WX.wxEXPAND()}, {:proportion, 1}])
@@ -68,8 +74,29 @@ defmodule Elics.Window do
     # Show the window.
     :wxFrame.show(frame)
 
-    new_state = Map.merge(state, %{wx: wx, frame: frame, panel: panel})
+    new_state =
+      Map.merge(state, %{
+        wx: wx,
+        frame: frame,
+        panel: panel,
+        buffer: text_buffer,
+        minibuffer: text_minibuffer
+      })
+
     {:ok, new_state}
+  end
+
+  # Handle the minibuffer ENTER event.
+  @impl true
+  def handle_info({:wx, _wxRef, _id, _obj, :command_text_enter}, state) do
+    # Retrieve the text entered in the minibuffer.
+    entered_text = :wxTextCtrl.getValue(state.minibuffer)
+    IO.puts("Minibuffer entry: #{entered_text}")
+
+    # Optionally clear the minibuffer after processing.
+    :wxTextCtrl.setValue(state.minibuffer, "")
+
+    {:noreply, state}
   end
 
   @impl true
@@ -80,8 +107,7 @@ defmodule Elics.Window do
     {:stop, :normal, state}
   end
 
-  # Handle other wx events here. For instance, you might add key event handling,
-  # menu commands, and custom emulation commands similar to Emacs.
+  # Handle other wx events here.
   @impl true
   def handle_info(_msg, state) do
     {:noreply, state}

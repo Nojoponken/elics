@@ -22,4 +22,5 @@
   get(wxNO_BORDER) -> ?wxNO_BORDER;
   get(wxRELEASE_NUMBER) -> ?wxRELEASE_NUMBER;
   get(wxTE_MULTILINE) -> ?wxTE_MULTILINE;
+  get(wxTE_PROCESS_ENTER) -> ?wxTE_PROCESS_ENTER;
   get(wxVERTICAL) -> ?wxVERTICAL.
